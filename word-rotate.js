@@ -42,6 +42,7 @@ class WordRotate extends HTMLElement {
     this.observer = new IntersectionObserver((entries, observer) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting && !this.isAnimating) {
+          console.log('Element entered viewport, starting animation'); // Debug log
           this.isAnimating = true;
           this.startAnimation();
           observer.unobserve(this);
@@ -74,7 +75,7 @@ class WordRotate extends HTMLElement {
       'Icy Peak': ['#4682B4', '#87CEEB', '#ADD8E6', '#B0E0E6', '#E0FFFF', '#F0F8FF'],
       'Rainbow Rush': ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082']
     };
-    return presets[preset] || presets['Ocean Vibes']; // Default to Ocean Vibes
+    return presets[preset] || presets['Ocean Vibes'];
   }
 
   splitLetters(word) {
@@ -94,16 +95,19 @@ class WordRotate extends HTMLElement {
   animateLetterOut(cw, i) {
     setTimeout(() => {
       cw[i].className = 'letter out';
+      console.log(`Animating out letter ${i}`); // Debug log
     }, i * 80);
   }
 
   animateLetterIn(nw, i) {
     setTimeout(() => {
       nw[i].className = 'letter in';
+      console.log(`Animating in letter ${i}`); // Debug log
     }, 340 + (i * 80));
   }
 
   changeWord() {
+    if (this.wordArray.length === 0) return;
     const cw = this.wordArray[this.currentWord];
     const nw = this.currentWord === this.wordArray.length - 1 ? this.wordArray[0] : this.wordArray[this.currentWord + 1];
     for (let i = 0; i < cw.length; i++) {
@@ -119,6 +123,11 @@ class WordRotate extends HTMLElement {
 
   startAnimation() {
     const words = this.shadowRoot.querySelectorAll('.word');
+    if (words.length === 0) {
+      console.error('No words found to animate'); // Debug log
+      return;
+    }
+    console.log(`Starting animation with ${words.length} words`); // Debug log
     words[this.currentWord].style.opacity = 1;
     this.wordArray = [];
     words.forEach(word => {
@@ -144,6 +153,8 @@ class WordRotate extends HTMLElement {
       clearInterval(this.intervalId);
     }
     this.isAnimating = false;
+    this.wordArray = [];
+    this.currentWord = 0;
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -152,15 +163,16 @@ class WordRotate extends HTMLElement {
         :host {
           display: block;
           width: 100%;
-          height: 100%;
+          height: 100vh; /* Full viewport height for visibility */
           position: relative;
           overflow: hidden;
+          background: #ffffff; /* Default white background for visibility */
         }
 
         .text {
           position: absolute;
           width: 100%;
-          height: 40px;
+          height: ${fontSize}px; /* Match font size for consistent height */
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
@@ -169,20 +181,24 @@ class WordRotate extends HTMLElement {
           font-size: ${fontSize}px;
           text-align: ${textAlignment};
           white-space: nowrap;
+          padding: 0;
+          margin: 0;
         }
 
         .before, .after {
           display: inline-block;
           vertical-align: top;
           margin: 0;
+          padding: 0 5px; /* Slight padding for spacing */
         }
 
         .word-container {
           display: inline-block;
           position: relative;
-          width: ${Math.max(...words.map(w => w.length)) * (fontSize * 0.6)}px; /* Dynamic width based on longest word */
+          width: ${Math.max(...words.map(w => w.length)) * (fontSize * 0.6)}px; /* Dynamic width */
           height: ${fontSize}px;
           vertical-align: top;
+          overflow: hidden;
         }
 
         .word {
